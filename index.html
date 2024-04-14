@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Interventional Radiology</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+</head>
+<style>
+.main-heading {
+    font-size: 15px;
+}
+#selectedLayer {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 60px;
+  text-shadow: 2px 2px 2px white;
+  z-index: 100;
+  text-align: center;
+}
+.building-label {
+  font-size: 20px;
+  padding: 2px 4px;
+}
+#color-key {
+  height: 150px;
+  width: 20px;
+  margin-left: 20px;
+  border-left: 2px solid #333;
+}
+#color-key {
+  background: linear-gradient(to top,
+    #FEB24C,
+    #FD8D3C,
+    #FC4E2A,
+    #E31A1C,
+    #BD0026,
+    #800026
+  );
+}
+#legend {
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+#legend span {
+  display: block;
+  margin-top: 10px;
+  font-size: 40px;
+}
+#legend span:first-of-type {
+  margin-top: 0;
+}
+} */
+</style>
+<body>
+    <div id="map" style=" position: fixed; right: 0; left: 0px; top: 0; bottom: 0 "></div>
+    <div id="map"></div>
+    <div id="selectedLayer">Monday Morning</div>
+
+    <div id="legend" style="position: absolute; bottom: 20px; right: 20px;">
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #800026;"></div>
+        <div style="margin-left: 10px;"> > 50</div>
+      </div>
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #BD0026;"></div>
+        <div style="margin-left: 10px;"> > 30</div>
+      </div>
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #E31A1C;"></div>
+        <div style="margin-left: 10px;"> >20 </div>
+      </div>
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #FC4E2A;"></div>
+        <div style="margin-left: 10px;"> > 5</div>
+      </div>
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #FD8D3C;"></div>
+        <div style="margin-left: 10px;"> > 1</div>
+      </div>
+      <div style="display: flex;">
+        <div style="width: 20px; height: 20px; background-color: #FEB24C;"></div>
+        <div style="margin-left: 10px;"> <= 1</div>
+      </div>
+      <h4> frequency </h4>
+    </div>
+    <!-- JS IMPORTS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src= "js/setup.js"></script>
+    <script src= "js/data.js"></script>
+    <script>
+
+    function getContinent(data, CONTINENT) {
+      var filteredData = {"type":"FeatureCollection","features":[]};
+
+      for (var i = 0; i < data.features.length; i++) {
+        if (data.features[i].properties.CONTINENT === CONTINENT) {
+          filteredData.features.push(data.features[i]);
+        }
+      }
+      return filteredData;
+    }
+
+    var africa = getContinent(data, "Africa");
+    var antarctica = getContinent(data, "Antarctica");
+    var asia = getContinent(data, "Asia");
+    var northAmerica = getContinent(data, "North America");
+    var southAmerica = getContinent(data, "South America");
+    var australia = getContinent(data, "Australia");
+    var europe = getContinent(data, "Europe");
+
+    var legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function (map) {
+      var div = L.DomUtil.create('div', 'info legend'),
+          sizes = [0, 100, 300, 600, 1000, 1500],
+          labels = [];
+      for (var i = 0; i < sizes.length; i++) {
+        div.innerHTML +=
+          '<i style="background:' + setColorFunc(sizes[i] + 1) + '"></i> ' +
+          sizes[i] + (sizes[i + 1] ? '&ndash;' + sizes[i + 1] + '<br>' : '+');
+      }
+      return div;
+    };
+
+    legend.addTo(map);
+
+  // Add Scale Bar to Map
+        L.control.scale({position: 'topleft'}).addTo(map);
+        function setColorFunc(size) {
+              return size > 50 ? '#800026' :
+                size > 30 ? '#BD0026' :
+                size > 20  ? '#E31A1C' :
+                size > 5  ? '#FC4E2A' :
+                size > 1  ? '#FD8D3C' :
+                '#FEB24C';
+            };
+
+        function styleFunc(feature) {
+          return {
+            fillColor: setColorFunc(feature.properties.FREQUENCY),
+            fillOpacity: 0.9,
+            weight: 1,
+            opacity: 1,
+            color: '#ffffff',
+            dashArray: '3'
+          };
+        }
+
+        var australiaLayer = L.geoJSON(australia, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                    +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+        var southAmericaLayer = L.geoJSON(southAmerica, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                  +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+        var northAmericaLayer = L.geoJSON(northAmerica, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                    +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+        var asiaLayer = L.geoJSON(asia, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                    +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+        var antarcticaLayer = L.geoJSON(antarctica, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                    +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+        var europeLayer = L.geoJSON(europe, {
+          style: styleFunc,
+          onEachFeature: function(feature, layer){
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomFeature
+            });
+            layer.bindPopup("<div style='font-size:20px'>"
+                  +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                    +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                    +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                    +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                    +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                    +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                    +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                    +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                    +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                    +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                    +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                    + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                    + "</div>"
+                    );
+           layer.bindTooltip(feature.properties.countriesPracIR, {
+           permanent: true,
+           direction: "center",
+           className: "building-label",
+           opacity: 0.9,
+           backgroundColor: null,
+           textColor: "#000000"
+           });
+           }
+           }).addTo(map);
+
+    var africaLayer = L.geoJSON(africa, {
+      style: styleFunc,
+      onEachFeature: function(feature, layer){
+        layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: zoomFeature
+        });
+        layer.bindPopup("<div style='font-size:20px'>"
+              +  "<strong>Country:</strong> " + feature.properties.countriesPracIR + " " + "<br>"
+                +  "<strong>Frequency:</strong> " + feature.properties.FREQUENCY + " " + "<br>"
+                +  "<strong>DR:</strong> " + feature.properties.SUM_DR + " " + "<br>"
+                +  "<strong>IR:</strong> " + feature.properties.SUM_IR + " " + "<br>"
+                +  "<strong>IRtrain:</strong> " + feature.properties.SUM_IRtrain + " " + "<br>"
+                +  "<strong>IRgraduate:</strong> " + feature.properties.SUM_Irgraduate + " " + "<br>"
+                +  "<strong>accredTrain:</strong> " + feature.properties.SUM_accredTrain + " " + "<br>"
+                +  "<strong>facProf:</strong> " + feature.properties.SUM_facProf + " " + "<br>"
+                +  "<strong>fellow:</strong> " + feature.properties.SUM_fellow + " " + "<br>"
+                +  "<strong>pracIR:</strong> " + feature.properties.SUM_pracIR + " " + "<br>"
+                +  "<strong>Resident:</strong> " + feature.properties.SUM_resident + " " + "<br>"
+                + "<strong>More Info: </strong>" + "<a href=\"https://www.google.com/\">Click Here</a>" + " " + "<br>"
+                + "</div>"
+                );
+       layer.bindTooltip(feature.properties.countriesPracIR, {
+       permanent: true,
+       direction: "center",
+       className: "building-label",
+       opacity: 0.9,
+       backgroundColor: null,
+       textColor: "#000000"
+       });
+       }
+       }).addTo(map);
+
+
+
+  var baseLayers = {
+    'Africa': africaLayer,
+    'Asia': asiaLayer,
+    'Europe': europeLayer,
+    'Antarctica': antarcticaLayer,
+    'North America': northAmericaLayer,
+    'South America': southAmericaLayer,
+    'Australia': australiaLayer,
+  };
+  L.control.layers(baseLayers, {}, {collapsed:false, activeBaseLayer: africaLayer}).addTo(map);
+
+  var currentLayerName = Object.keys(baseLayers)[0];
+  document.querySelector("#selectedLayer").innerText = currentLayerName;
+
+  map.on("baselayerchange", function(e) {
+    currentLayerName = e.name;
+    document.querySelector("#selectedLayer").innerText = currentLayerName;
+  });
+
+var dayLayers = [africaLayer, asiaLayer, europeLayer, antarcticaLayer, northAmericaLayer, southAmericaLayer, australiaLayer];
+
+function resetHighlight(e) {
+    for (var i = 0; i < dayLayers.length; i++) {
+        dayLayers[i].resetStyle(e.target);
+    }
+}
+  function zoomFeature(e){
+    console.log(e.target.getBounds());
+    console.log("This map is designed to locate the food truck with the least amount of foot traffic. Delicious! - tpm")
+    map.fitBounds(e.target.getBounds().pad(1.5));
+  }
+
+  function highlightFeature(e){
+    var layer = e.target;
+
+    layer.setStyle({
+      weight: 5,
+      color: '#696',
+      dashArray: '',
+      fillOpacity: 0.7
+    });
+    // for different web browsers
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+      layer.bringToFront();
+    }
+  }
+
+  </script>
+</body>
+</html>
