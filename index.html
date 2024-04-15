@@ -67,7 +67,7 @@
 <body>
     <div id="map" style=" position: fixed; right: 0; left: 0px; top: 0; bottom: 0 "></div>
     <div id="map"></div>
-    <div id="selectedLayer">Monday Morning</div>
+    <div id="selectedLayer"> </div>
 
     <div id="legend" style="position: absolute; bottom: 20px; right: 20px;">
       <div style="display: flex;">
@@ -432,7 +432,7 @@ function resetHighlight(e) {
 }
   function zoomFeature(e){
     console.log(e.target.getBounds());
-    console.log("This map is designed to locate the food truck with the least amount of foot traffic. Delicious! - tpm")
+    console.log("Survey IR data")
     map.fitBounds(e.target.getBounds().pad(1.5));
   }
 
