@@ -413,15 +413,17 @@
     'South America': southAmericaLayer,
     'Australia': australiaLayer,
   };
-  L.control.layers(baseLayers, {}, {collapsed:false, activeBaseLayer: africaLayer}).addTo(map);
+  L.control.layers(baseLayers, {}, {collapsed:false,
+    // activeBaseLayer: africaLayer
+  }).addTo(map);
 
-  var currentLayerName = Object.keys(baseLayers)[0];
-  document.querySelector("#selectedLayer").innerText = currentLayerName;
+  // var currentLayerName = Object.keys(baseLayers)[0];
+  // document.querySelector("#selectedLayer").innerText = currentLayerName;
 
-  map.on("baselayerchange", function(e) {
-    currentLayerName = e.name;
-    document.querySelector("#selectedLayer").innerText = currentLayerName;
-  });
+  // map.on("baselayerchange", function(e) {
+  //   currentLayerName = e.name;
+  //   document.querySelector("#selectedLayer").innerText = currentLayerName;
+  // });
 
 var dayLayers = [africaLayer, asiaLayer, europeLayer, antarcticaLayer, northAmericaLayer, southAmericaLayer, australiaLayer];
 
