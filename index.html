@@ -86,9 +86,13 @@
             geojson.resetStyle(e.target);
         }
 
-        function zoomToFeature(e) {
-            map.fitBounds(e.target.getBounds());
-        }
+   function zoomToFeature(e) {
+    // Uniform padding around the feature
+    map.fitBounds(e.target.getBounds(), {
+        padding: [50, 50]  // Increase padding to zoom out more
+    });
+}
+
 
         function createPopupContent(feature) {
             var frequency = feature.properties.FREQUENCY;
