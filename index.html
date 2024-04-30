@@ -36,6 +36,7 @@
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+     <script src="js/data.js"></script>
     <script>
         // Initialize the map on the "map" div with a given center and zoom
         var map = L.map('map', {
@@ -126,7 +127,7 @@
 
         L.control.layers(continentLayers, {}, {collapsed:false}).addTo(map);
     </script>
-     <script src="js/data.js"></script>
+    
 
 </body>
 </html>
