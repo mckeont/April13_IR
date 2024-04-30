@@ -34,100 +34,98 @@
 </style>
 <body>
     <div id="map"></div>
+    <div id="legend"></div>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-     <script src="js/data.js"></script>
+    <script src="js/data.js"></script>
     <script>
-        // Initialize the map on the "map" div with a given center and zoom
         var map = L.map('map', {
-            center: [20.0, 10.0],  // Modify as needed for your application's focus area
-            zoom: 3,               // Adjust based on your preference
-            minZoom: 2,            // Optional: minimum zoom level
-            maxZoom: 19            // Optional: maximum zoom level
+            center: [20.0, 10.0],
+            zoom: 3,
+            minZoom: 2,
+            maxZoom: 19
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Assuming data.js has properly initialized the `data` variable
-        function getContinent(data, CONTINENT) {
-            var filteredData = {"type":"FeatureCollection","features":[]};
-            data.features.forEach(function(feature) {
-                if (feature.properties.CONTINENT === CONTINENT) {
-                    filteredData.features.push(feature);
-                }
-            });
-            return filteredData;
+        function getColor(frequency) {
+            return frequency > 50 ? '#800026' :
+                   frequency > 20 ? '#E31A1C' :
+                   frequency > 10 ? '#FC4E2A' :
+                   frequency > 5  ? '#FD8D3C' :
+                                    '#FEB24C';
         }
 
-        var continents = {
-            "Africa": getContinent(data, "Africa"),
-            "Antarctica": getContinent(data, "Antarctica"),
-            "Asia": getContinent(data, "Asia"),
-            "North America": getContinent(data, "North America"),
-            "South America": getContinent(data, "South America"),
-            "Australia": getContinent(data, "Oceania"),
-            "Europe": getContinent(data, "Europe")
-        };
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.FREQUENCY),
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
 
-        function createPopupContent(feature) {
-            var frequency = feature.properties.FREQUENCY;
-            return `<div style='font-size:20px'>
-                        <strong>Country:</strong> ${feature.properties.countriesPracIR}<br>
-                        <strong>Number of Respondents:</strong> ${frequency}<br>
-                        <strong>Diagnostic Radiology:</strong> ${feature.properties.SUM_DR} (${((feature.properties.SUM_DR / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Interventional Radiology:</strong> ${feature.properties.SUM_IR} (${((feature.properties.SUM_IR / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Interventional Radiology Trained:</strong> ${feature.properties.SUM_IRtrain} (${((feature.properties.SUM_IRtrain / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Interventional Radiology Graduated:</strong> ${feature.properties.SUM_Irgraduate} (${((feature.properties.SUM_Irgraduate / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Accredited Training:</strong> ${feature.properties.SUM_accredTrain} (${((feature.properties.SUM_accredTrain / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Faculty/Professor:</strong> ${feature.properties.SUM_facProf} (${((feature.properties.SUM_facProf / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Practice Interventional Radiology:</strong> ${feature.properties.SUM_pracIR} (${((feature.properties.SUM_pracIR / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Resident:</strong> ${feature.properties.SUM_resident} (${((feature.properties.SUM_resident / frequency) * 100).toFixed(2)}%)<br>
-                        <strong>Fellow:</strong> ${feature.properties.SUM_fellow} (${((feature.properties.SUM_fellow / frequency) * 100).toFixed(2)}%)<br>
-                     
-                    </div>`;
+        function highlightFeature(e) {
+            var layer = e.target;
+            layer.setStyle({
+                weight: 5,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.9
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+        }
+
+        function resetHighlight(e) {
+            geojson.resetStyle(e.target);
         }
 
         function onEachFeature(feature, layer) {
             layer.on({
-                mouseover: function(e) {
-                    var layer = e.target;
-                    layer.setStyle({
-                        weight: 5,
-                        color: '#666',
-                        dashArray: '',
-                        fillOpacity: 0.7
-                    });
-                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                        layer.bringToFront();
-                    }
-                },
-                mouseout: function(e) {
-                    e.target.setStyle({
-                        weight: 1,
-                        color: '#667',
-                        dashArray: '3',
-                        fillOpacity: 0.9
-                    });
-                },
-                click: function(e) {
-                    map.fitBounds(e.target.getBounds().pad(1.5));
-                }
+                mouseover: highlightFeature,
+                mouseout: resetHighlight,
+                click: zoomToFeature
             });
-            layer.bindPopup(createPopupContent(feature));
         }
 
-        var continentLayers = {};
-        Object.keys(continents).forEach(function(continent) {
-            continentLayers[continent] = L.geoJSON(continents[continent], {
-                onEachFeature: onEachFeature
-            }).addTo(map);
-        });
+        var geojson = L.geoJSON(data, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
 
-        L.control.layers(continentLayers, {}, {collapsed:false}).addTo(map);
+        // Adding a legend for frequency
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0, 5, 10, 20, 50],
+                labels = [],
+                from, to;
+
+            for (var i = 0; i < grades.length; i++) {
+                from = grades[i];
+                to = grades[i + 1];
+
+                labels.push(
+                    '<i style="background:' + getColor(from + 1) + '"></i> ' +
+                    from + (to ? '&ndash;' + to : '+'));
+            }
+
+            div.innerHTML = labels.join('<br>');
+            return div;
+        };
+
+        legend.addTo(map);
+
+        function zoomToFeature(e) {
+            map.fitBounds(e.target.getBounds());
+        }
     </script>
-    
-
 </body>
 </html>
