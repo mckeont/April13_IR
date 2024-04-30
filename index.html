@@ -69,31 +69,6 @@
             };
         }
 
-        function highlightFeature(e) {
-            var layer = e.target;
-            layer.setStyle({
-                weight: 5,
-                color: '#666',
-                dashArray: '',
-                fillOpacity: 0.9
-            });
-            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                layer.bringToFront();
-            }
-        }
-
-        function resetHighlight(e) {
-            geojson.resetStyle(e.target);
-        }
-
-   function zoomToFeature(e) {
-    // Uniform padding around the feature
-    map.fitBounds(e.target.getBounds(), {
-        padding: [50, 50]  // Increase padding to zoom out more
-    });
-}
-
-
         function createPopupContent(feature) {
             var frequency = feature.properties.FREQUENCY;
             return `<div style='font-size:20px'>
@@ -117,13 +92,40 @@
                 mouseout: resetHighlight,
                 click: zoomToFeature
             });
-            layer.bindPopup(createPopupContent(feature));
+            layer.bindPopup(createPopupContent(feature), {
+                autoPan: true,
+                autoPanPadding: [50, 50],
+                autoPanSpeed: 10
+            });
         }
 
         var geojson = L.geoJSON(data, {
             style: style,
             onEachFeature: onEachFeature
         }).addTo(map);
+
+        function highlightFeature(e) {
+            var layer = e.target;
+            layer.setStyle({
+                weight: 5,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.9
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+        }
+
+        function resetHighlight(e) {
+            geojson.resetStyle(e.target);
+        }
+
+        function zoomToFeature(e) {
+            map.fitBounds(e.target.getBounds(), {
+                padding: [50, 50]
+            });
+        }
 
         // Adding a legend for frequency
         var legend = L.control({position: 'bottomright'});
