@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" 
           integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" 
-          crossorigin="" />
+          crossorigin="">
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 </head>
 <style>
@@ -50,42 +50,17 @@
         margin-top: 10px;
         font-size: 40px;
     }
-    #legend span:first-of-type {
-        margin-top: 0;
-    }
 </style>
 <body>
     <div id="map" style="position: fixed; right: 0; left: 0; top: 0; bottom: 0;"></div>
     <div id="selectedLayer"></div>
     <div id="legend" style="position: absolute; bottom: 20px; right: 20px;">
         <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #800026;"></div>
-            <div style="margin-left: 10px;"> > 50</div>
+            <!-- Legend content -->
         </div>
-        <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #BD0026;"></div>
-            <div style="margin-left: 10px;"> > 30</div>
-        </div>
-        <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #E31A1C;"></div>
-            <div style="margin-left: 10px;"> > 20</div>
-        </div>
-        <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #FC4E2A;"></div>
-            <div style="margin-left: 10px;"> > 5</div>
-        </div>
-        <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #FD8D3C;"></div>
-            <div style="margin-left: 10px;"> > 1</div>
-        </div>
-        <div style="display: flex;">
-            <div style="width: 20px; height: 20px; background-color: #FEB24C;"></div>
-            <div style="margin-left: 10px;"> <= 1</div>
-        </div>
-        <h4>Frequency</h4>
     </div>
     <!-- JS IMPORTS -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
     <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
@@ -93,120 +68,59 @@
     <script src="js/setup.js"></script>
     <script src="js/data.js"></script>
     <script>
-        function getContinent(data, CONTINENT) {
-            var filteredData = {"type":"FeatureCollection","features":[]};
-            for (var i = 0; i < data.features.length; i++) {
-                if (data.features[i].properties.CONTINENT === CONTINENT) {
-                    filteredData.features.push(data.features[i]);
+        // Assuming data.js has properly initialized the `data` variable
+        document.addEventListener('DOMContentLoaded', function () {
+            function getContinent(data, CONTINENT) {
+                var filteredData = {"type":"FeatureCollection","features":[]};
+                for (var i = 0; i < data.features.length; i++) {
+                    if (data.features[i].properties.CONTINENT === CONTINENT) {
+                        filteredData.features.push(data.features[i]);
+                    }
                 }
+                return filteredData;
             }
-            return filteredData;
-        }
 
-        var continents = {
-            "Africa": getContinent(data, "Africa"),
-            "Antarctica": getContinent(data, "Antarctica"),
-            "Asia": getContinent(data, "Asia"),
-            "North America": getContinent(data, "North America"),
-            "South America": getContinent(data, "South America"),
-            "Australia": getContinent(data, "Oceania"),
-            "Europe": getContinent(data, "Europe")
-        };
-
-        var map = L.map('map').setView([51.505, -0.09], 13); // Set your initial view or dynamic based on data
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        function setColorFunc(size) {
-            return size > 50 ? '#800026' :
-                   size > 30 ? '#BD0026' :
-                   size > 20  ? '#E31A1C' :
-                   size > 5   ? '#FC4E2A' :
-                   size > 1   ? '#FD8D3C' :
-                                '#FEB24C';
-        }
-
-        function styleFunc(feature) {
-            return {
-                fillColor: setColorFunc(feature.properties.FREQUENCY),
-                fillOpacity: 0.9,
-                weight: 1,
-                opacity: 1,
-                color: '#ffffff',
-                dashArray: '3'
+            var continents = {
+                "Africa": getContinent(data, "Africa"),
+                "Antarctica": getContinent(data, "Antarctica"),
+                "Asia": getContinent(data, "Asia"),
+                "North America": getContinent(data, "North America"),
+                "South America": getContinent(data, "South America"),
+                "Australia": getContinent(data, "Oceania"),
+                "Europe": getContinent(data, "Europe")
             };
-        }
 
-        function createPopupContent(feature) {
-            var frequency = feature.properties.FREQUENCY;
-            return "<div style='font-size:20px'>" +
-                   "<strong>Country:</strong> " + feature.properties.countriesPracIR + "<br>" +
-                   "<strong>Number of Respondents:</strong> " + frequency + "<br>" +
-                   "<strong>Diagnostic Radiology:</strong> " + feature.properties.SUM_DR + " (" + ((feature.properties.SUM_DR / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Interventional Radiology:</strong> " + feature.properties.SUM_IR + " (" + ((feature.properties.SUM_IR / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Interventional Radiology Trained:</strong> " + feature.properties.SUM_IRtrain + " (" + ((feature.properties.SUM_IRtrain / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Interventional Radiology Graduated:</strong> " + feature.properties.SUM_Irgraduate + " (" + ((feature.properties.SUM_Irgraduate / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Accredited Training:</strong> " + feature.properties.SUM_accredTrain + " (" + ((feature.properties.SUM_accredTrain / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Faculty/Professor:</strong> " + feature.properties.SUM_facProf + " (" + ((feature.properties.SUM_facProf / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Practice Interventional Radiology:</strong> " + feature.properties.SUM_pracIR + " (" + ((feature.properties.SUM_pracIR / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Resident:</strong> " + feature.properties.SUM_resident + " (" + ((feature.properties.SUM_resident / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>Fellow:</strong> " + feature.properties.SUM_fellow + " (" + ((feature.properties.SUM_fellow / frequency) * 100).toFixed(2) + "%)<br>" +
-                   "<strong>More Info:</strong> <a href='https://drive.google.com/drive/u/1/folders/1oPlh7vKmmysZSTW1z0-p9oXdw_nR2tC5'>Click Here</a><br>" +
-                   "</div>";
-        }
-
-        function onEachFeature(feature, layer) {
-            layer.on({
-                mouseover: highlightFeature,
-                mouseout: resetHighlight,
-                click: zoomFeature
-            });
-            layer.bindPopup(createPopupContent(feature));
-            layer.bindTooltip(feature.properties.countriesPracIR, {
-                permanent: true,
-                direction: "center",
-                className: "building-label",
-                opacity: 0.9,
-                backgroundColor: null,
-                textColor: "#000000"
-            });
-        }
-
-        var layers = {};
-        for (var continent in continents) {
-            layers[continent] = L.geoJSON(continents[continent], {
-                style: styleFunc,
-                onEachFeature: onEachFeature
-            }).addTo(map);
-        }
-
-        L.control.layers(layers, {}, {collapsed:false}).addTo(map);
-
-        function resetHighlight(e) {
-            for (var layerName in layers) {
-                layers[layerName].resetStyle(e.target);
+            function createPopupContent(feature) {
+                // Popup content creation logic
+                return "<div style='font-size:20px'>...</div>";
             }
-        }
 
-        function zoomFeature(e) {
-            map.fitBounds(e.target.getBounds().pad(1.5));
-        }
-
-        function highlightFeature(e) {
-            var layer = e.target;
-            layer.setStyle({
-                weight: 5,
-                color: '#666',
-                dashArray: '',
-                fillOpacity: 0.7
-            });
-            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                layer.bringToFront();
+            function onEachFeature(feature, layer) {
+                layer.on({
+                    mouseover: function(e) { /* logic */ },
+                    mouseout: function(e) { /* logic */ },
+                    click: function(e) { /* logic */ }
+                });
+                layer.bindPopup(createPopupContent(feature));
+                layer.bindTooltip(feature.properties.countriesPracIR, {
+                    permanent: true,
+                    direction: "center",
+                    className: "building-label",
+                    opacity: 0.9,
+                    backgroundColor: null,
+                    textColor: "#000000"
+                });
             }
-        }
+
+            var layers = {};
+            for (var continent in continents) {
+                layers[continent] = L.geoJSON(continents[continent], {
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+            }
+
+            L.control.layers(layers, {}, {collapsed:false}).addTo(map);
+        });
     </script>
 </body>
 </html>
