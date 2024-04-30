@@ -86,12 +86,34 @@
             geojson.resetStyle(e.target);
         }
 
+        function zoomToFeature(e) {
+            map.fitBounds(e.target.getBounds());
+        }
+
+        function createPopupContent(feature) {
+            var frequency = feature.properties.FREQUENCY;
+            return `<div style='font-size:20px'>
+                        <strong>Country:</strong> ${feature.properties.countriesPracIR}<br>
+                        <strong>Number of Respondents:</strong> ${frequency}<br>
+                        <strong>Diagnostic Radiology:</strong> ${feature.properties.SUM_DR} (${((feature.properties.SUM_DR / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Interventional Radiology:</strong> ${feature.properties.SUM_IR} (${((feature.properties.SUM_IR / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Interventional Radiology Trained:</strong> ${feature.properties.SUM_IRtrain} (${((feature.properties.SUM_IRtrain / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Interventional Radiology Graduated:</strong> ${feature.properties.SUM_Irgraduate} (${((feature.properties.SUM_Irgraduate / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Accredited Training:</strong> ${feature.properties.SUM_accredTrain} (${((feature.properties.SUM_accredTrain / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Faculty/Professor:</strong> ${feature.properties.SUM_facProf} (${((feature.properties.SUM_facProf / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Practice Interventional Radiology:</strong> ${feature.properties.SUM_pracIR} (${((feature.properties.SUM_pracIR / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Resident:</strong> ${feature.properties.SUM_resident} (${((feature.properties.SUM_resident / frequency) * 100).toFixed(2)}%)<br>
+                        <strong>Fellow:</strong> ${feature.properties.SUM_fellow} (${((feature.properties.SUM_fellow / frequency) * 100).toFixed(2)}%)<br>
+                    </div>`;
+        }
+
         function onEachFeature(feature, layer) {
             layer.on({
                 mouseover: highlightFeature,
                 mouseout: resetHighlight,
                 click: zoomToFeature
             });
+            layer.bindPopup(createPopupContent(feature));
         }
 
         var geojson = L.geoJSON(data, {
@@ -122,10 +144,6 @@
         };
 
         legend.addTo(map);
-
-        function zoomToFeature(e) {
-            map.fitBounds(e.target.getBounds());
-        }
     </script>
 </body>
 </html>
