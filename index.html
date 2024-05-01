@@ -135,11 +135,14 @@
             geojson.resetStyle(e.target);
         }
 
+ 
         function zoomToFeature(e) {
-            map.fitBounds(e.target.getBounds(), {
-                padding: [50, 50]
-            });
-        }
+    map.fitBounds(e.target.getBounds(), {
+        maxZoom: 8, // Set a maximum zoom level
+        padding: [50, 50]
+    });
+}
+
 
         // Adding a legend for frequency
         var legend = L.control({position: 'bottomright'});
