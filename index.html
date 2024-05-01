@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 </head>
 <style>
+    
     #map {
         position: fixed;
         right: 0;
@@ -62,7 +63,7 @@
 
 
      function getColor(frequency) {
-    var maxFrequency = getMaxFrequency(); // You need to define this function to get the maximum frequency from your data
+    var maxFrequency = getMaxFrequency(); // Last edit May 1st 
     var colorScale = chroma.scale(['#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#800026']).domain([0, maxFrequency]);
     return colorScale(frequency).hex();
 }
