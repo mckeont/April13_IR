@@ -51,9 +51,9 @@
         }).addTo(map);
 
         function getColor(frequency) {
-            return frequency > 50 ? '#800026' :
-                   frequency > 20 ? '#E31A1C' :
-                   frequency > 10 ? '#FC4E2A' :
+            return frequency > 120 ? '#800026' :
+                   frequency > 80 ? '#E31A1C' :
+                   frequency > 30 ? '#FC4E2A' :
                    frequency > 5  ? '#FD8D3C' :
                                     '#FEB24C';
         }
@@ -136,7 +136,7 @@
 
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend'),
-                grades = [0, 5, 10, 20, 50],
+                grades = [0, 5, 30, 80, 120],
                 labels = [],
                 from, to;
 
